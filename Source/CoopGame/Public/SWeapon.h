@@ -19,14 +19,17 @@ public:
 	// Sets default values for this actor's properties
 	ASWeapon();
 
+	UFUNCTION(BlueprintCallable, Category = "Fire") //  Blueprintprotected specifier not working
+	virtual void Fire();
+
+	void StartFire();
+
+	void StopFire();
+
 private:
 
-	float LineTraceLength = 1000.f;
-
-protected:
-
-	UFUNCTION(BlueprintCallable, Category = "Fire")
-	void Fire();
+	FTimerHandle TimeBetweenFire;
+	
 
 protected:
 
@@ -36,6 +39,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
 	TSubclassOf<UDamageType> DamageType;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	float BaseDamage;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Properties")
 	FName MuzzleSocket;
@@ -44,7 +49,10 @@ protected:
 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Properties")
-	UParticleSystem *ImpactEffect;
+	UParticleSystem *DefualtImpactEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Properties")
+	UParticleSystem *FleshImpactEffect;
 
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Properties")
@@ -52,14 +60,30 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Properties")
 	UParticleSystem *TraceEffect;
 
+
+	float LineTraceLength = 1000.f;
+
+	/// Fire mechanizm
+	float LastFireTime;
+
+	/* RPM -- Bulltets per minute Fire by Weapon */
+	UPROPERTY(EditDefaultsOnly, Category = "Properties")
+	float RateOfFire;
+
+	/* Derived from RateOfFire */
+	float TimeBetweenShots;
+	//AActor *MyOwner;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void GetProperlyPartilce(FHitResult &Hit);
 
-	
+private:
+
+	void PlayFireEffect(FVector TraceEnd);
+
+
 	
 };

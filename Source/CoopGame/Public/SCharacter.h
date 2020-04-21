@@ -8,6 +8,8 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class ASWeapon;
+class APlayerController;
 
 UCLASS()
 class COOPGAME_API ASCharacter : public ACharacter
@@ -26,6 +28,29 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	USpringArmComponent *SpringArmComp;
 
+	bool bWantsToZoom;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+	float ZoomedFOV;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1, ClampMax = 100))
+	float ZoomInterpSpeed;
+
+	/* Default FOV set during beginPlay */
+	float DefaultFOV;
+
+	ASWeapon *CurrentWeapon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<ASWeapon> BPWeapon;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "Weapon")
+	FName WeaponSocket;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<UCameraShake> BPCameraShake;
+
 protected:
 
 	void MoveForward(float Val);
@@ -34,7 +59,11 @@ protected:
 	void BigenCrouch();
 	void EndCrouch();
 
+	void BeginZoom();
+	void EndZoom();
 
+	void StartFire();
+	void StopFire();
 
 protected:
 	// Called when the game starts or when spawned
@@ -49,5 +78,8 @@ public:
 
 	virtual FVector GetPawnViewLocation() const override;
 
+private:
+
+	APlayerController *OwnController;
 	
 };
