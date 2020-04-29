@@ -10,6 +10,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class ASWeapon;
 class APlayerController;
+class USHealthComponent;
 
 UCLASS()
 class COOPGAME_API ASCharacter : public ACharacter
@@ -51,6 +52,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<UCameraShake> BPCameraShake;
 
+	USHealthComponent* HealthComp;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Health")
+	bool bDead;
+
 protected:
 
 	void MoveForward(float Val);
@@ -64,6 +70,9 @@ protected:
 
 	void StartFire();
 	void StopFire();
+
+	UFUNCTION()
+	void OnHealthChanged(USHealthComponent* OwnHealtComp, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
 protected:
 	// Called when the game starts or when spawned

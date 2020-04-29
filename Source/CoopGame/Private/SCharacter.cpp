@@ -7,8 +7,11 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/CapsuleComponent.h"
 
 #include "../Public/SWeapon.h"
+#include "CoopGame.h"
+#include "../Components/SHealthComponent.h"
 
 
 // Sets default values
@@ -23,8 +26,12 @@ ASCharacter::ASCharacter()
 
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
+
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComp->SetupAttachment(SpringArmComp);
+
+	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("HealthComponent"));
 
 	ZoomedFOV = 65.f;
 	ZoomInterpSpeed = 20.f;
@@ -53,7 +60,27 @@ void ASCharacter::BeginPlay()
 
 	OwnController = Cast<APlayerController>(GetController());
 
+	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+
 }
+
+void ASCharacter::OnHealthChanged(USHealthComponent* OwnHealtComp, float Health, float HealthDelta, 
+	const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Health Changed = %s"), *FString::SanitizeFloat(Health));
+	if (Health <= 0 && !bDead)
+	{
+		bDead = true;
+
+		GetMovementComponent()->StopMovementImmediately();
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		DetachFromControllerPendingDestroy();
+
+		SetLifeSpan(10.f);
+	}
+}
+
 
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
