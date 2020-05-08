@@ -6,9 +6,55 @@
 #include "GameFramework/Actor.h"
 #include "SWeapon.generated.h"
 
+
 class USkeletalMeshComponent;
 class UDamageType;
 class UParticleSystem;
+
+/// Contains Infromation a single hitscan weapon linetrace
+USTRUCT()
+struct FHitScanTrace
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	UPROPERTY()
+	TEnumAsByte<EPhysicalSurface> SurfaceType;
+
+	UPROPERTY()
+	FVector_NetQuantize TraceTo;
+
+};
+
+
+/// USTRUCT() with NewSerializa() function
+//USTRUCT()
+//struct FMyCustomNetSerializableStruct
+//{
+//	GENERATED_USTRUCT_BODY()
+//
+//public:
+//
+//	UPROPERTY()
+//		float SomeProperty;
+//
+//	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+//	{
+//		return true;
+//	}
+//
+//
+//};
+//
+//template<>
+//struct TStructOpsTypeTraits<FMyCustomNetSerializableStruct> : public TStructOpsTypeTraitsBase2<FMyCustomNetSerializableStruct>
+//{
+//	enum
+//	{
+//		WithNetSerializer = true
+//	};
+//};
 
 UCLASS()
 class COOPGAME_API ASWeapon : public AActor
@@ -25,6 +71,9 @@ public:
 	void StartFire();
 
 	void StopFire();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerFire();
 
 private:
 
@@ -74,11 +123,19 @@ protected:
 	float TimeBetweenShots;
 	//AActor *MyOwner;
 
+	UPROPERTY(ReplicatedUsing = OnRep_HitScanTrace)
+	FHitScanTrace HitScanTrace;
+	UFUNCTION()
+	void OnRep_HitScanTrace();
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void GetProperlyPartilce(FHitResult &Hit);
+	//void GetProperlyPartilce(FHitResult &Hit);
+
+	void PlayImpactEffects(EPhysicalSurface surfacetype, FVector ImpactPoint);
 
 private:
 

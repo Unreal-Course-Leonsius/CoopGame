@@ -40,6 +40,7 @@ protected:
 	/* Default FOV set during beginPlay */
 	float DefaultFOV;
 
+	UPROPERTY(Replicated)
 	ASWeapon *CurrentWeapon;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
@@ -52,9 +53,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<UCameraShake> BPCameraShake;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	USHealthComponent* HealthComp;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Health")
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Health")
 	bool bDead;
 
 protected:

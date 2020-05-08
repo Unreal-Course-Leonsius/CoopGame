@@ -7,6 +7,7 @@
 #include "PhysicsEngine/RadialForceComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 
 // Sets default values
@@ -37,7 +38,12 @@ ASBarrel::ASBarrel()
 	ExplosionDamage = 100;
 	ExplosionImpulse = 400;
 	bExploded = false;
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
+
+
 
 // Called when the game starts or when spawned
 void ASBarrel::BeginPlay()
@@ -63,7 +69,6 @@ void ASBarrel::ExplodeBarrel(USHealthComponent * OwnHealtComp, float Health, flo
 	{
 		bExploded = true;
 
-		ExplosionEffect->Activate(true);
 		RadialForceComp->FireImpulse();
 
 		FVector BoostIntesity = FVector::UpVector * ExplosionImpulse;
@@ -75,15 +80,42 @@ void ASBarrel::ExplodeBarrel(USHealthComponent * OwnHealtComp, float Health, flo
 			GetActorLocation(),
 			RadialForceComp->Radius,
 			DamageType->GetClass(),
-			TArray<AActor*> (),
+			TArray<AActor*>(),
 			DamageCauser,
 			nullptr,
 			true
 		);
 
-		Barrel->SetMaterial(0, ExplodedMaterial);
-		UE_LOG(LogTemp, Error, TEXT("ExplodeBarrel Event Damage = %i"), IsDamege);
+		ExplosionBarrel();
+
+		/*DamageData.rDamageType = DamageType;
+		DamageData.rDamageCauser = DamageCauser;*/
+
 	}
+}
+
+void ASBarrel::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// need not Condition Because Variable must be update for Client and Simulated Proxy
+	// and therefor its ReplicatedUsing update will not be executed for Server
+	// So it will not be run twice for Server
+	DOREPLIFETIME(ASBarrel, bExploded);
+}
+
+void ASBarrel::OnRep_Exploded()
+{
+	UE_LOG(LogTemp, Error, TEXT("Update BarrelDamageData"));
+	ExplosionBarrel();
+}
+
+void ASBarrel::ExplosionBarrel()
+{
+	ExplosionEffect->Activate(true);
+	Barrel->SetMaterial(0, ExplodedMaterial);
+	//UE_LOG(LogTemp, Error, TEXT("ExplodeBarrel Event Damage = %i"), IsDamege);
+
 }
 
 // Called every frame

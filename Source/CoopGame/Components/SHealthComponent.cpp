@@ -2,6 +2,9 @@
 
 #include "SHealthComponent.h"
 
+#include "DrawDebugHelpers.h"
+#include "Net/UnrealNetwork.h"
+
 
 // Sets default values for this component's properties
 USHealthComponent::USHealthComponent()
@@ -9,6 +12,7 @@ USHealthComponent::USHealthComponent()
 	
 	DefaultHealth = 100.f;
 	
+	bReplicates = true;
 }
 
 
@@ -17,15 +21,21 @@ void USHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AActor *OwnerActor = GetOwner();
-	if (OwnerActor)
+	if (GetOwnerRole() == ROLE_Authority)
 	{
-		OwnerActor->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+		AActor *OwnerActor = GetOwner();
+		if (OwnerActor)
+		{
+			OwnerActor->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+			//DrawDebugString(GetWorld(), FVector(200, 0, 150.f), FString("Health Component"), OwnerActor, FColor::White, 10.f);
+		}
 	}
+	
 
 	Health = DefaultHealth;
 
 }
+
 
 void USHealthComponent::HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
@@ -43,3 +53,9 @@ void USHealthComponent::HandleTakeAnyDamage(AActor* DamagedActor, float Damage, 
 
 
 
+void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(USHealthComponent, Health);
+}

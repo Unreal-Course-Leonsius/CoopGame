@@ -6,6 +6,22 @@
 #include "GameFramework/Actor.h"
 #include "SBarrel.generated.h"
 
+
+//USTRUCT()
+//struct FDamageData
+//{
+//	GENERATED_USTRUCT_BODY()
+//
+//public:
+//
+//	UPROPERTY()
+//	const UDamageType *rDamageType;
+//	
+//	UPROPERTY()
+//	AActor *rDamageCauser;
+//
+//};
+
 class URadialForceComponent;
 class USHealthComponent;
 
@@ -38,12 +54,20 @@ protected:
 	UMaterialInterface* ExplodedMaterial;
 
 
+	UPROPERTY(ReplicatedUsing=OnRep_Exploded)
+	bool bExploded;
+	UFUNCTION()
+	void OnRep_Exploded();
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
 	void ExplodeBarrel(USHealthComponent* OwnHealtComp, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
+	void ExplosionBarrel();
 
 public:	
 	// Called every frame
@@ -56,7 +80,6 @@ protected:
 
 private:
 
-	bool bExploded;
 	float ExplosionImpulse;
 	
 };
