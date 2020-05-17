@@ -54,11 +54,12 @@ protected:
 	UMaterialInterface* ExplodedMaterial;
 
 
-	UPROPERTY(ReplicatedUsing=OnRep_Exploded)
+	/*UPROPERTY(ReplicatedUsing=OnRep_Exploded)
 	bool bExploded;
 	UFUNCTION()
-	void OnRep_Exploded();
+	void OnRep_Exploded();*/
 
+	bool bExploded;
 
 protected:
 	// Called when the game starts or when spawned

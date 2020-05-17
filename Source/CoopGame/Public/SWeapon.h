@@ -109,7 +109,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Properties")
 	UParticleSystem *TraceEffect;
 
-
+	UPROPERTY(EditDefaultsOnly, Category = "Properties")
 	float LineTraceLength = 1000.f;
 
 	/// Fire mechanizm
@@ -127,7 +127,7 @@ protected:
 	FHitScanTrace HitScanTrace;
 	UFUNCTION()
 	void OnRep_HitScanTrace();
-
+		
 
 protected:
 	// Called when the game starts or when spawned
@@ -136,6 +136,7 @@ protected:
 	//void GetProperlyPartilce(FHitResult &Hit);
 
 	void PlayImpactEffects(EPhysicalSurface surfacetype, FVector ImpactPoint);
+
 
 private:
 

@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "DrawDebugHelpers.h"
 
 #include "../Public/SWeapon.h"
 #include "CoopGame.h"
@@ -90,6 +91,7 @@ void ASCharacter::OnHealthChanged(USHealthComponent* OwnHealtComp, float Health,
 	const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Health Changed = %s"), *FString::SanitizeFloat(Health));
+	//DrawDebugString(GetWorld(), GetActorLocation(), "Health Damage", DamageCauser, FColor::Red, 5.f);
 	if (Health <= 0 && !bDead)
 	{
 		bDead = true;

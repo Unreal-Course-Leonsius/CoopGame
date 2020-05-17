@@ -69,22 +69,26 @@ void ASBarrel::ExplodeBarrel(USHealthComponent * OwnHealtComp, float Health, flo
 	{
 		bExploded = true;
 
-		RadialForceComp->FireImpulse();
+		if (Role == ROLE_Authority)
+		{
+			RadialForceComp->FireImpulse();
 
-		FVector BoostIntesity = FVector::UpVector * ExplosionImpulse;
-		Barrel->AddImpulse(BoostIntesity, NAME_None, true);
+			FVector BoostIntesity = FVector::UpVector * ExplosionImpulse;
+			Barrel->AddImpulse(BoostIntesity, NAME_None, true);
 
-		bool IsDamege = UGameplayStatics::ApplyRadialDamage(
-			Barrel,
-			ExplosionDamage,
-			GetActorLocation(),
-			RadialForceComp->Radius,
-			DamageType->GetClass(),
-			TArray<AActor*>(),
-			DamageCauser,
-			nullptr,
-			true
-		);
+			bool IsDamege = UGameplayStatics::ApplyRadialDamage(
+				Barrel,
+				ExplosionDamage,
+				GetActorLocation(),
+				RadialForceComp->Radius,
+				DamageType->GetClass(),
+				TArray<AActor*>(),
+				DamageCauser,
+				nullptr,
+				true
+			);
+		}
+	
 
 		ExplosionBarrel();
 
@@ -94,21 +98,21 @@ void ASBarrel::ExplodeBarrel(USHealthComponent * OwnHealtComp, float Health, flo
 	}
 }
 
-void ASBarrel::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//void ASBarrel::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+//{
+//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//
+//	// need not Condition Because Variable must be update for Client and Simulated Proxy
+//	// and therefor its ReplicatedUsing update will not be executed for Server
+//	// So it will not be run twice for Server
+//	//DOREPLIFETIME(ASBarrel, bExploded);
+//}
 
-	// need not Condition Because Variable must be update for Client and Simulated Proxy
-	// and therefor its ReplicatedUsing update will not be executed for Server
-	// So it will not be run twice for Server
-	DOREPLIFETIME(ASBarrel, bExploded);
-}
-
-void ASBarrel::OnRep_Exploded()
-{
-	UE_LOG(LogTemp, Error, TEXT("Update BarrelDamageData"));
-	ExplosionBarrel();
-}
+//void ASBarrel::OnRep_Exploded()
+//{
+//	UE_LOG(LogTemp, Error, TEXT("Update BarrelDamageData"));
+//	ExplosionBarrel();
+//}
 
 void ASBarrel::ExplosionBarrel()
 {

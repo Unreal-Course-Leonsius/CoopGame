@@ -120,8 +120,8 @@ void ASWeapon::Fire()
 			UGameplayStatics::ApplyPointDamage(
 				DamageActor,
 				CurrentDamage,
-				Direction,
-				Hit,
+			OUT	Direction,
+			OUT	Hit,
 				MyOwner->GetInstigatorController(),
 				this,
 				DamageType
@@ -196,6 +196,7 @@ void ASWeapon::PlayImpactEffects(EPhysicalSurface surfacetype, FVector ImpactPoi
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, ImpactPoint, ShotDirection.Rotation());
 	}
 }
+
 
 void ASWeapon::ServerFire_Implementation()
 {
