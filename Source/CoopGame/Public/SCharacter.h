@@ -73,12 +73,22 @@ protected:
 	void StartFire();
 	void StopFire();
 
+	UPROPERTY(ReplicatedUsing=OnRep_Speed, BlueprintReadWrite, Category = "Powerup")
+	float MaxSpeed;
 	UFUNCTION()
-	void OnHealthChanged(USHealthComponent* OwnHealtComp, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+	void OnRep_Speed();
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnHealthChanged(USHealthComponent* OwnHealtComp, float Health, 
+		float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
+	UFUNCTION(BlueprintCallable, Category = "Powerup")
+	void ChangeSpeed(float SuperSpeed);
 
 public:	
 	// Called every frame

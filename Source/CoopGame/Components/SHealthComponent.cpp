@@ -51,6 +51,20 @@ void USHealthComponent::HandleTakeAnyDamage(AActor* DamagedActor, float Damage, 
 
 }
 
+void USHealthComponent::Heal(float HealthAmount)
+{
+
+	if (HealthAmount <= 0 || Health <= 0)
+		return;
+
+	Health = FMath::Clamp(Health + HealthAmount, 0.f, DefaultHealth);
+
+	OnHealthChanged.Broadcast(this, Health, -HealthAmount, nullptr, nullptr, nullptr);
+
+	UE_LOG(LogTemp, Warning, TEXT("Health Powerup = %f"), HealthAmount);
+
+}
+
 void USHealthComponent::OnRep_Health(float oldHealth)
 {
 	UE_LOG(LogTemp, Warning, TEXT("oldHealth = %f   Health = %f"), oldHealth, Health);

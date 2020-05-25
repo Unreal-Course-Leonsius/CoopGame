@@ -14,6 +14,7 @@
 #include "../Public/SWeapon.h"
 #include "CoopGame.h"
 #include "../Components/SHealthComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 // Sets default values
@@ -39,6 +40,7 @@ ASCharacter::ASCharacter()
 	ZoomInterpSpeed = 20.f;
 
 	WeaponSocket = "WeaponSocket";
+	MaxSpeed = 0;
 
 }
 
@@ -85,7 +87,22 @@ void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 
 	DOREPLIFETIME(ASCharacter, CurrentWeapon);
 	DOREPLIFETIME(ASCharacter, bDead);
+	DOREPLIFETIME(ASCharacter, MaxSpeed);
 }
+
+void ASCharacter::ChangeSpeed(float SuperSpeed)
+{
+	MaxSpeed = SuperSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MaxSpeed;
+	UE_LOG(LogTemp, Warning, TEXT("Speed Changed = %f"), GetCharacterMovement()->MaxWalkSpeed)
+}
+
+void ASCharacter::OnRep_Speed()
+{
+	GetCharacterMovement()->MaxWalkSpeed = MaxSpeed;
+	UE_LOG(LogTemp, Warning, TEXT("OnRep Speed Changed = %f"), GetCharacterMovement()->MaxWalkSpeed)
+}
+
 
 void ASCharacter::OnHealthChanged(USHealthComponent* OwnHealtComp, float Health, float HealthDelta, 
 	const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
