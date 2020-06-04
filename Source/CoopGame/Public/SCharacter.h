@@ -12,6 +12,7 @@ class ASWeapon;
 class APlayerController;
 class USHealthComponent;
 
+
 UCLASS()
 class COOPGAME_API ASCharacter : public ACharacter
 {
@@ -59,6 +60,7 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Health")
 	bool bDead;
 
+
 protected:
 
 	void MoveForward(float Val);
@@ -79,6 +81,12 @@ protected:
 	void OnRep_Speed();
 
 
+	UPROPERTY(ReplicatedUsing = OnRep_HealthWidget)
+	bool bIsHealthWidget = false;
+	UFUNCTION()
+	void OnRep_HealthWidget();
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -94,13 +102,22 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+
 	virtual FVector GetPawnViewLocation() const override;
+
+	USHealthComponent* GetHealthComponent() { return HealthComp; }
+
 
 private:
 
-	APlayerController *OwnController;
+	class ASPlayerController *OwnController;
+
+	ENetRole RoleState;
 	
 };

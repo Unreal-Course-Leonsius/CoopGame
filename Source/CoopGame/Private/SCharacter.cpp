@@ -10,11 +10,14 @@
 #include "Components/CapsuleComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #include "../Public/SWeapon.h"
 #include "CoopGame.h"
 #include "../Components/SHealthComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "SGameModeBase.h"
+#include "../Player/SPlayerController.h"
+
 
 
 // Sets default values
@@ -44,6 +47,7 @@ ASCharacter::ASCharacter()
 
 }
 
+
 // Called when the game starts or when spawned
 void ASCharacter::BeginPlay()
 {
@@ -51,8 +55,9 @@ void ASCharacter::BeginPlay()
 
 	DefaultFOV = CameraComp->FieldOfView;
 
-	/// Spawn Default weapon
+	RoleState = Role;
 	
+	/// Spawn Default weapon
 	if (Role == ROLE_Authority)
 	{
 		FActorSpawnParameters SpawnParams;
@@ -74,12 +79,84 @@ void ASCharacter::BeginPlay()
 		CurrentWeapon->SetOwner(this);
 		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocket);
 	}*/
-
-	OwnController = Cast<APlayerController>(GetController());
-
+	
+	
 	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 
+
 }
+
+void ASCharacter::PossessedBy(AController * NewController)
+{
+	Super::PossessedBy(NewController);
+
+	OwnController = Cast<ASPlayerController>(NewController);
+
+	bIsHealthWidget = true;
+
+	if (IsLocallyControlled())
+	{
+		HealthComp->CreatePlayerHealthWidget(this);
+		UE_LOG(LogTemp, Warning, TEXT("Posssesed Create widget"));
+		DrawDebugString(GetWorld(), GetActorLocation(), FString("Create Widget"), nullptr, FColor::Yellow, 5);
+	}
+
+}
+
+void ASCharacter::UnPossessed()
+{
+	Super::UnPossessed();
+
+	ASGameModeBase* GM = Cast<ASGameModeBase>(GetWorld()->GetAuthGameMode());
+	if (GM && OwnController)
+	{
+		GM->ResurrectionPlayer(OwnController);
+		UE_LOG(LogTemp, Warning, TEXT("GameMode name = %s  PC name = %s"), *GM->GetName(), *OwnController->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameMode is NULL || PC is NULL"));
+	}
+
+	bIsHealthWidget = false;
+	if(Role == ROLE_Authority)
+	{
+		HealthComp->DeletePlayerHealthWidget();
+		UE_LOG(LogTemp, Warning, TEXT("UnPosssesed Create widget"));
+	}
+
+}
+
+void ASCharacter::OnRep_HealthWidget()
+{
+	if (IsLocallyControlled() && bIsHealthWidget)
+	{
+		OwnController = Cast<ASPlayerController>(GetController());
+		HealthComp->CreatePlayerHealthWidget(this);
+		UE_LOG(LogTemp, Warning, TEXT("Posssesed Create widget"));
+		DrawDebugString(GetWorld(), GetActorLocation(), FString("Create Widget"), nullptr, FColor::Yellow, 5);
+	}
+
+	if (!bIsHealthWidget && RoleState == ROLE_AutonomousProxy)
+	{
+		HealthComp->DeletePlayerHealthWidget();
+		UE_LOG(LogTemp, Warning, TEXT("UnPosssesed Create widget"));
+	}
+	
+}
+
+// Called every frame
+void ASCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+	float NewFOV = FMath::FInterpTo(CameraComp->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
+
+	CameraComp->SetFieldOfView(NewFOV);
+
+}
+
 
 void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -88,14 +165,10 @@ void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(ASCharacter, CurrentWeapon);
 	DOREPLIFETIME(ASCharacter, bDead);
 	DOREPLIFETIME(ASCharacter, MaxSpeed);
+	DOREPLIFETIME(ASCharacter, bIsHealthWidget);
 }
 
-void ASCharacter::ChangeSpeed(float SuperSpeed)
-{
-	MaxSpeed = SuperSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = MaxSpeed;
-	UE_LOG(LogTemp, Warning, TEXT("Speed Changed = %f"), GetCharacterMovement()->MaxWalkSpeed)
-}
+
 
 void ASCharacter::OnRep_Speed()
 {
@@ -117,23 +190,12 @@ void ASCharacter::OnHealthChanged(USHealthComponent* OwnHealtComp, float Health,
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 		DetachFromControllerPendingDestroy();
-
-		SetLifeSpan(10.f);
+		CurrentWeapon->Destroy(true);
+		SetLifeSpan(5.f);
 	}
 }
 
 
-// Called every frame
-void ASCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
-	float NewFOV = FMath::FInterpTo(CameraComp->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
-
-	CameraComp->SetFieldOfView(NewFOV);
-
-}
 
 // Called to bind functionality to input
 void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -158,6 +220,16 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ASCharacter::StopFire);
 }
 
+
+void ASCharacter::ChangeSpeed(float SuperSpeed)
+{
+	MaxSpeed = SuperSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MaxSpeed;
+	UE_LOG(LogTemp, Warning, TEXT("Speed Changed = %f"), GetCharacterMovement()->MaxWalkSpeed)
+}
+
+
+/// Movement Functions
 void ASCharacter::MoveForward(float Val)
 {
 	AddMovementInput(GetActorForwardVector() * Val);
@@ -178,6 +250,7 @@ void ASCharacter::EndCrouch()
 	UnCrouch();
 }
 
+/// Zoom Functions
 void ASCharacter::BeginZoom()
 {
 	bWantsToZoom = true;
@@ -188,14 +261,17 @@ void ASCharacter::EndZoom()
 	bWantsToZoom = false;
 }
 
+/// Fire Functions
 void ASCharacter::StartFire()
 {
 	UE_LOG(LogTemp, Warning, TEXT("StartFire"));
+
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StartFire();
 		OwnController->ClientPlayCameraShake(BPCameraShake);
 	}
+
 }
 
 void ASCharacter::StopFire()

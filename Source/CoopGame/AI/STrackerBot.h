@@ -41,6 +41,10 @@ protected:
 
 
 	UMaterialInstanceDynamic *MaterialDynamic;
+	UPROPERTY(Replicated)
+	int32 MaxPowerLevel = 4;
+	UPROPERTY(Replicated)
+	int32 NrOfBots = 0;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
 	UParticleSystem *ExplosionEffect;
@@ -69,8 +73,6 @@ protected:
 	FTimerHandle TimerHandle_CheckPowerLevel;
 
 
-	int32 PowerLevel = 0;
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -86,6 +88,15 @@ protected:
 	void DamageSelf();
 
 	void OnCheckNeabyBots();
+
+	UPROPERTY(ReplicatedUsing=OnRep_NeabyBots)
+	int32 PowerLevel;
+	UFUNCTION()
+	void OnRep_NeabyBots();
+
+private:
+
+	void SetCollectBotEffect();
 
 public:	
 	// Called every frame

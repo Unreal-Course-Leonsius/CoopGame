@@ -9,6 +9,7 @@
 #include "DrawDebugHelpers.h"
 #include "Components/SphereComponent.h"
 #include "Sound/SoundCue.h"
+#include "Net/UnrealNetwork.h"
 
 #include "../Components/SHealthComponent.h"
 #include "../Public/SCharacter.h"
@@ -44,7 +45,7 @@ ASTrackerBot::ASTrackerBot()
 	bExploded = false;
 	bStartSelfDestroyted = false;
 	ExplosionDamage = 100;
-	ExplosionRadius = 100;
+	ExplosionRadius = 500;
 	SelfDamageInterval = 0.25f;
 }
 
@@ -138,6 +139,7 @@ void ASTrackerBot::ExplodeTracker()
 }
 
 
+
 // Called every frame
 void ASTrackerBot::Tick(float DeltaTime)
 {
@@ -177,6 +179,16 @@ void ASTrackerBot::Tick(float DeltaTime)
 
 }
 
+void ASTrackerBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ASTrackerBot, NrOfBots);
+	DOREPLIFETIME(ASTrackerBot, PowerLevel);
+	DOREPLIFETIME(ASTrackerBot, MaxPowerLevel);
+	
+	
+}
 
 void ASTrackerBot::NotifyActorBeginOverlap(AActor * OtherActor)
 {
@@ -206,7 +218,7 @@ void ASTrackerBot::DamageSelf()
 
 void ASTrackerBot::OnCheckNeabyBots()
 {
-
+	//UE_LOG(LogTemp, Error, TEXT("TrackBot =========================="));
 	const float Radius = 600;
 
 	FCollisionShape CollisionSphere;
@@ -221,8 +233,7 @@ void ASTrackerBot::OnCheckNeabyBots()
 
 	DrawDebugSphere(GetWorld(), GetActorLocation(), Radius, 12, FColor::Yellow, false, 1.f);
 
-	int32 NrOfBots = 0;
-
+	NrOfBots = 0;
 	for (FOverlapResult Result : Overalaps)
 	{
 		ASTrackerBot *Bot = Cast<ASTrackerBot>(Result.GetActor());
@@ -232,8 +243,18 @@ void ASTrackerBot::OnCheckNeabyBots()
 		}
 	}
 
-	const int32 MaxPowerLevel = 4;
 
+	SetCollectBotEffect();
+	//UE_LOG(LogTemp, Warning, TEXT("TrackBot Server Function PowerLevel = %i"), PowerLevel);
+	//NrOfBots = 0;
+	//UE_LOG(LogTemp, Log, TEXT("TrackBot Server Function NrOfBots = %i"), NrOfBots);
+
+}
+
+
+
+void ASTrackerBot::SetCollectBotEffect()
+{
 	PowerLevel = FMath::Clamp(NrOfBots, 0, MaxPowerLevel);
 	float Alpha = PowerLevel / (float)MaxPowerLevel;
 
@@ -242,5 +263,12 @@ void ASTrackerBot::OnCheckNeabyBots()
 
 	if (MaterialDynamic)
 		MaterialDynamic->SetScalarParameterValue("PowerLevelAlpha", Alpha);
+	//UE_LOG(LogTemp, Warning, TEXT("TrackBot SetCollectBotEffect NrOfBots = %i"), NrOfBots);
 
+}
+
+void ASTrackerBot::OnRep_NeabyBots()
+{
+	SetCollectBotEffect();
+	//UE_LOG(LogTemp, Warning, TEXT("TrackBot OnRep Function PowerLevel = %i"), PowerLevel);
 }

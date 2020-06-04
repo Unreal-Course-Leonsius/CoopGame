@@ -4,9 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "../Widget/SHealthWidget.h"
 #include "SHealthComponent.generated.h"
 
+class ASCharacter;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnHeathChangedSignature, USHealthComponent*, HealtComp, float, Health, float, HealthDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
+
 
 UCLASS( ClassGroup=(COOP), meta=(BlueprintSpawnableComponent) )
 class COOPGAME_API USHealthComponent : public UActorComponent
@@ -16,6 +20,8 @@ class COOPGAME_API USHealthComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	USHealthComponent();
+
+	float GetHealth() const { return Health; }
 
 protected:
 	// Called when the game starts
@@ -41,5 +47,24 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnHeathChangedSignature OnHealthChanged;
+
+public:
+
+	void CreatePlayerHealthWidget(ASCharacter* OwningPlayer); // ASCharacter* OwningPlayer
+
+	void DeletePlayerHealthWidget();
+
+	void DeleteHealthWidget();
+
+private:
+
+	bool bIsDead;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Widget")
+	TSubclassOf<USHealthWidget> HealthClass;  // USHealthWidget
+
+	USHealthWidget* HealthIndicator = nullptr;
+
+	ASCharacter* Player;
 	
 };
