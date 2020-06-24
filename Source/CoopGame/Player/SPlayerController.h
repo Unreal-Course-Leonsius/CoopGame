@@ -30,10 +30,19 @@ public:
 
 	ASCharacter* GetControlCharater();
 
+	virtual void BeginPlay() override;
 
 	virtual void Possess(APawn* aPawn) override;
 
 	virtual void UnPossess() override;
+
+	/*  Call this function after Character Possessed */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Crosshair")
+	FVector2D GetPositionCrosshair();
+
+	/*  Call this function after Character Possessed */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Crosshair")
+	FVector2D GetPositionAnchor();
 
 protected:
 

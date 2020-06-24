@@ -112,16 +112,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Properties")
 	float LineTraceLength = 1000.f;
 
-	/// Fire mechanizm
-	float LastFireTime;
 
 	/* RPM -- Bulltets per minute Fire by Weapon */
 	UPROPERTY(EditDefaultsOnly, Category = "Properties")
 	float RateOfFire;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", meta = (ClampMin = 0.f))
+	float BulletSpread;
+
 	/* Derived from RateOfFire */
 	float TimeBetweenShots;
 	//AActor *MyOwner;
+
+	/// Fire mechanizm
+	float LastFireTime;
 
 	UPROPERTY(ReplicatedUsing = OnRep_HitScanTrace)
 	FHitScanTrace HitScanTrace;

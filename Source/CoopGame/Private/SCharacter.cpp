@@ -94,7 +94,7 @@ void ASCharacter::PossessedBy(AController * NewController)
 
 	bIsHealthWidget = true;
 
-	if (IsLocallyControlled())
+	if (IsPlayerControlled())  // IsLocallyControlled()
 	{
 		HealthComp->CreatePlayerHealthWidget(this);
 		UE_LOG(LogTemp, Warning, TEXT("Posssesed Create widget"));
@@ -129,7 +129,7 @@ void ASCharacter::UnPossessed()
 
 void ASCharacter::OnRep_HealthWidget()
 {
-	if (IsLocallyControlled() && bIsHealthWidget)
+	if (IsPlayerControlled() && bIsHealthWidget)  // IsLocallyControlled()
 	{
 		OwnController = Cast<ASPlayerController>(GetController());
 		HealthComp->CreatePlayerHealthWidget(this);
@@ -269,7 +269,11 @@ void ASCharacter::StartFire()
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StartFire();
-		OwnController->ClientPlayCameraShake(BPCameraShake);
+
+		/// Check for AI Guard because OwnController cast to PlayerCOntroller
+		/// therefor in AI this value will be NULL
+		if(OwnController)
+			OwnController->ClientPlayCameraShake(BPCameraShake);
 	}
 
 }
@@ -285,12 +289,16 @@ void ASCharacter::StopFire()
 
 
 
+bool ASCharacter::IsAlive()
+{
+	return HealthComp->GetHealth() > 0;
+}
 
 FVector ASCharacter::GetPawnViewLocation() const
 {
 	if (CameraComp)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Update Pawns Viewpont FV = %s"), *CameraComp->GetComponentLocation().ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Update Pawns Viewpont FV = %s"), *CameraComp->GetComponentLocation().ToString());
 		return CameraComp->GetComponentLocation();
 	}
 

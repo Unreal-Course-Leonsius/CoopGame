@@ -71,6 +71,7 @@ protected:
 
 	FTimerHandle TimerHandle_SelfDamage;
 	FTimerHandle TimerHandle_CheckPowerLevel;
+	FTimerHandle TimerHandle_RefreshPath;
 
 
 protected:
@@ -93,6 +94,8 @@ protected:
 	int32 PowerLevel;
 	UFUNCTION()
 	void OnRep_NeabyBots();
+
+	void RefreshPath();
 
 private:
 

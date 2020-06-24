@@ -45,7 +45,7 @@ ASTrackerBot::ASTrackerBot()
 	bExploded = false;
 	bStartSelfDestroyted = false;
 	ExplosionDamage = 100;
-	ExplosionRadius = 500;
+	ExplosionRadius = 400;
 	SelfDamageInterval = 0.25f;
 }
 
@@ -64,20 +64,132 @@ void ASTrackerBot::BeginPlay()
 
 }
 
+
+// Called every frame
+void ASTrackerBot::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	/// if Tracket Exploded need not Executed this
+	if (Role == ROLE_Authority && !bExploded)
+	{
+		float DistanceToTarget = (GetActorLocation() - NextPathPoint).Size();
+
+		/*bool bEquale = (int32(NextPathPoint.X * NextPathPoint.Y)) ==
+			(int32(PlayerCharacter->GetActorLocation().X * PlayerCharacter->GetActorLocation().Y))
+			? true : false;*/
+
+		if (DistanceToTarget <= RequiredDistanceToTarget)
+		{
+			NextPathPoint = GetNextPathPoint();
+			//UE_LOG(LogTemp, Error, TEXT("Set Path Point   NextPathPoint = %s   PlayerCharacter Loc = %s"), *NextPathPoint.ToString(), *PlayerCharacter->GetActorLocation().ToString());
+		}
+		else
+		{
+
+			//UE_LOG(LogTemp, Warning, TEXT("Next Path Point  = %s"), *NextPathPoint.ToString());
+			// Keep Moving Next Target Point
+			FVector ForceDirection = NextPathPoint - GetActorLocation();
+			ForceDirection.Normalize();
+
+			ForceDirection *= MovementForce;
+			MeshComp->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
+
+			DrawDebugSphere(GetWorld(), NextPathPoint, 20.f, 12, FColor::Yellow, false, 0.f, 1.f);
+
+		}
+	}
+
+
+
+}
+
+
+void ASTrackerBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASTrackerBot, NrOfBots);
+	DOREPLIFETIME(ASTrackerBot, PowerLevel);
+	DOREPLIFETIME(ASTrackerBot, MaxPowerLevel);
+
+
+}
+
+
+void ASTrackerBot::OnRep_NeabyBots()
+{
+	SetCollectBotEffect();
+	//UE_LOG(LogTemp, Warning, TEXT("TrackBot OnRep Function PowerLevel = %i"), PowerLevel);
+}
+
+
+
+
 FVector ASTrackerBot::GetNextPathPoint()
 {
 	
+	/// Old Code
+	//UNavigationPath *NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), PlayerCharacter);
 
-	UNavigationPath *NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), PlayerCharacter);
+	//if (NavPath && NavPath->PathPoints.Num() > 1)
+	//{
+	//	//UE_LOG(LogTemp, Warning, TEXT("Num PointMass = %i"), NavPath->PathPoints.Num());
+	//	return NavPath->PathPoints[1];
+	//}
+	//return GetActorLocation();
 
-	if (NavPath && NavPath->PathPoints.Num() > 1)
+	/// New Code
+	AActor* BestTarget = nullptr;
+	float NearestTargetDistance = FLT_MAX;  // Max number of float
+
+	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Num PointMass = %i"), NavPath->PathPoints.Num());
-		return NavPath->PathPoints[1];
+		APawn* TestPawn = It->Get();
+		if (TestPawn == nullptr || USHealthComponent::IsFriendly(TestPawn, this))
+		{
+			continue;
+		}
+
+		USHealthComponent* TestPawnHealthComp = Cast<USHealthComponent>(TestPawn->GetComponentByClass(USHealthComponent::StaticClass()));
+		if (TestPawnHealthComp && TestPawnHealthComp->GetHealth() > 0.0f)
+		{
+			float Distance = (TestPawn->GetActorLocation() - GetActorLocation()).Size();
+
+			if (Distance < NearestTargetDistance)
+			{
+				BestTarget = TestPawn;
+				NearestTargetDistance = Distance;
+			}
+		}
 	}
+
+	if (BestTarget)
+	{
+		UNavigationPath* NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), BestTarget);
+
+		GetWorldTimerManager().ClearTimer(TimerHandle_RefreshPath);
+		GetWorldTimerManager().SetTimer(TimerHandle_RefreshPath, this, &ASTrackerBot::RefreshPath, 5.0f, false);
+
+		if (NavPath && NavPath->PathPoints.Num() > 1)
+		{
+			// Return next point in the path
+			return NavPath->PathPoints[1];
+		}
+	}
+
+	// Failed to find path
 	return GetActorLocation();
 
 }
+
+
+void ASTrackerBot::RefreshPath()
+{
+	NextPathPoint = GetNextPathPoint();
+}
+
+
 
 void ASTrackerBot::HandleTakeDamge(USHealthComponent * OwnerHealtComp, float Health, float HealthDelta, 
 	const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
@@ -140,55 +252,7 @@ void ASTrackerBot::ExplodeTracker()
 
 
 
-// Called every frame
-void ASTrackerBot::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
-	/// if Tracket Exploded need not Executed this
-	if (Role == ROLE_Authority && !bExploded)
-	{
-		float DistanceToTarget = (GetActorLocation() - NextPathPoint).Size();
-
-		/*bool bEquale = (int32(NextPathPoint.X * NextPathPoint.Y)) ==
-			(int32(PlayerCharacter->GetActorLocation().X * PlayerCharacter->GetActorLocation().Y))
-			? true : false;*/
-
-		if (DistanceToTarget <= RequiredDistanceToTarget)
-		{
-			NextPathPoint = GetNextPathPoint();
-			//UE_LOG(LogTemp, Error, TEXT("Set Path Point   NextPathPoint = %s   PlayerCharacter Loc = %s"), *NextPathPoint.ToString(), *PlayerCharacter->GetActorLocation().ToString());
-		}
-		else
-		{
-
-			//UE_LOG(LogTemp, Warning, TEXT("Next Path Point  = %s"), *NextPathPoint.ToString());
-			// Keep Moving Next Target Point
-			FVector ForceDirection = NextPathPoint - GetActorLocation();
-			ForceDirection.Normalize();
-
-			ForceDirection *= MovementForce;
-			MeshComp->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
-
-			DrawDebugSphere(GetWorld(), NextPathPoint, 20.f, 12, FColor::Yellow, false, 0.f, 1.f);
-
-		}
-	}
-
-	
-
-}
-
-void ASTrackerBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-	DOREPLIFETIME(ASTrackerBot, NrOfBots);
-	DOREPLIFETIME(ASTrackerBot, PowerLevel);
-	DOREPLIFETIME(ASTrackerBot, MaxPowerLevel);
-	
-	
-}
 
 void ASTrackerBot::NotifyActorBeginOverlap(AActor * OtherActor)
 {
@@ -198,7 +262,7 @@ void ASTrackerBot::NotifyActorBeginOverlap(AActor * OtherActor)
 		return;
 
 	ASCharacter *Player = Cast<ASCharacter>(OtherActor);
-	if (Player)
+	if (Player && !USHealthComponent::IsFriendly(Player, this))
 	{
 		if(Role == ROLE_Authority)
 			GetWorldTimerManager().SetTimer(TimerHandle_SelfDamage, this, &ASTrackerBot::DamageSelf, SelfDamageInterval, true, 0.f);
@@ -210,11 +274,15 @@ void ASTrackerBot::NotifyActorBeginOverlap(AActor * OtherActor)
 
 }
 
+
+
 void ASTrackerBot::DamageSelf()
 {
 	/// Damage Self
 	UGameplayStatics::ApplyDamage(this, 20, GetInstigatorController(), this, nullptr);
 }
+
+
 
 void ASTrackerBot::OnCheckNeabyBots()
 {
@@ -267,8 +335,3 @@ void ASTrackerBot::SetCollectBotEffect()
 
 }
 
-void ASTrackerBot::OnRep_NeabyBots()
-{
-	SetCollectBotEffect();
-	//UE_LOG(LogTemp, Warning, TEXT("TrackBot OnRep Function PowerLevel = %i"), PowerLevel);
-}

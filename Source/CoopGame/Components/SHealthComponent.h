@@ -21,7 +21,6 @@ public:
 	// Sets default values for this component's properties
 	USHealthComponent();
 
-	float GetHealth() const { return Health; }
 
 protected:
 	// Called when the game starts
@@ -48,6 +47,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnHeathChangedSignature OnHealthChanged;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+	uint8 TeamNum;
+
 public:
 
 	void CreatePlayerHealthWidget(ASCharacter* OwningPlayer); // ASCharacter* OwningPlayer
@@ -55,6 +57,13 @@ public:
 	void DeletePlayerHealthWidget();
 
 	void DeleteHealthWidget();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "HealthComponent")
+	float GetHealth() const { return Health; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "HealthComponent")
+	static bool IsFriendly(AActor* ActorA, AActor* ActorB);
+
 
 private:
 

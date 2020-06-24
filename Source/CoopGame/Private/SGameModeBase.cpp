@@ -8,6 +8,7 @@
 #include "SGameStateBase.h"
 #include "SPlayerState.h"
 #include "../Player/SPlayerController.h"
+#include "../Widget/SHUD.h"
 
 
 
@@ -22,6 +23,9 @@ ASGameModeBase::ASGameModeBase()
 	PlayerStateClass = ASPlayerState::StaticClass();
 
 	PlayerControllerClass = ASPlayerController::StaticClass();
+
+	// use our custom HUD class
+	HUDClass = ASHUD::StaticClass();
 
 }
 

@@ -9,7 +9,6 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "TimerManager.h"
 #include "Net/UnrealNetwork.h"
-//#include "Components/SkeletalMeshComponent.h"
 
 #include "../CoopGame.h"
 
@@ -22,6 +21,15 @@ FAutoConsoleVariableRef CVARDebugWeaponDrawing(
 	TEXT("Draw Lines for Weapons"),
 	ECVF_Cheat
 	);
+
+
+static int32 DebugFireLocationsDrawing = 0;
+FAutoConsoleVariableRef CVARDebugFireLocationsDrawing(
+	TEXT("COOP.DebugFireLocations"),
+	DebugFireLocationsDrawing,
+	TEXT("Draw Fire start & End Positions"),
+	ECVF_Cheat
+);
 
 // Sets default values
 ASWeapon::ASWeapon()
@@ -42,6 +50,8 @@ ASWeapon::ASWeapon()
 
 	NetUpdateFrequency = 66.f;
 	MinNetUpdateFrequency = 33.f;
+
+	BulletSpread = 2.f;
 }
 
 
@@ -65,11 +75,10 @@ void ASWeapon::BeginPlay()
 
 void ASWeapon::Fire()
 {
-	UE_LOG(LogTemp, Warning, TEXT("FireFunction"));
+	//UE_LOG(LogTemp, Warning, TEXT("FireFunction"));
 	
 	if (Role < ROLE_Authority)
 		ServerFire();
-
 
 	AActor* MyOwner = GetOwner();
 
@@ -79,11 +88,24 @@ void ASWeapon::Fire()
 		FVector StartLocation;
 		FRotator StartRotation;
 		MyOwner->GetActorEyesViewPoint(OUT StartLocation, OUT StartRotation);
+		//MyOwner->
 
-		UE_LOG(LogTemp, Warning, TEXT("CameraLocation & StartLocation = %s"), *StartLocation.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("CameraLocation & StartLocation = %s,  Rotation = %s"), *StartLocation.ToString(), *StartRotation.ToString());
 
-		FVector Direction = StartRotation.Vector();
-		FVector EndLocation = StartLocation + (StartRotation.Vector() * LineTraceLength);
+		FVector ShotDirection = StartRotation.Vector();
+
+		/// Spread Bullet
+		float HalfRad = FMath::DegreesToRadians(BulletSpread);                   // Get Radian
+		ShotDirection = FMath::VRandCone(ShotDirection, HalfRad, HalfRad);       // Get Random vector
+
+		FVector EndLocation = StartLocation + (ShotDirection  * LineTraceLength);
+		//UE_LOG(LogTemp, Warning, TEXT("LineTrace End fire function = %s"), *EndLocation.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("LineTrace End DebugFire = %i"), DebugFireLocationsDrawing);
+		if (DebugFireLocationsDrawing)
+		{
+			DrawDebugSphere(GetWorld(), StartLocation, 100, 12, FColor::Yellow, false, 2.f, 0, 1.f);
+			DrawDebugSphere(GetWorld(), EndLocation, 100, 12, FColor::Red, false, 2.f, 0, 3.f);
+		}
 
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(MyOwner);
@@ -120,10 +142,10 @@ void ASWeapon::Fire()
 			UGameplayStatics::ApplyPointDamage(
 				DamageActor,
 				CurrentDamage,
-			OUT	Direction,
+			OUT	ShotDirection,
 			OUT	Hit,
 				MyOwner->GetInstigatorController(),
-				this,
+				MyOwner,  // this
 				DamageType
 			);
 			UE_LOG(LogTemp, Warning, TEXT("Damage"));

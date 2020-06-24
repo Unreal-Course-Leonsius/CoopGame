@@ -27,6 +27,9 @@ USHealthComponent::USHealthComponent()
 	bIsDead = false;
 
 	bReplicates = true;
+
+	TeamNum = 255;
+
 }
 
 
@@ -70,6 +73,88 @@ void USHealthComponent::BeginPlay()
 }
 
 
+void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(USHealthComponent, Health);
+}
+
+
+void USHealthComponent::OnRep_Health(float oldHealth)
+{
+	UE_LOG(LogTemp, Warning, TEXT("oldHealth = %f   Health = %f"), oldHealth, Health);
+	float Damage = oldHealth - Health;
+	OnHealthChanged.Broadcast(this, Health, Damage, nullptr, nullptr, nullptr);
+}
+
+
+void USHealthComponent::HandleTakeAnyDamage(AActor* DamagedActor, float Damage,
+	const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
+{
+
+	if (Damage <= 0.f || bIsDead)
+		return;
+
+	if (DamageCauser != DamagedActor && IsFriendly(DamageCauser, DamagedActor))
+	{
+		return;
+	}
+
+	Health = FMath::Clamp(Health - Damage, 0.f, DefaultHealth);
+	bIsDead = Health <= 0;
+
+	UE_LOG(LogTemp, Warning, TEXT("Health Changed = %s, bIsDead = %i"), *FString::SanitizeFloat(Health), bIsDead);
+
+	OnHealthChanged.Broadcast(this, Health, Damage, DamageType, InstigatedBy, DamageCauser);
+
+	if (bIsDead && InstigatedBy != nullptr)
+	{
+		ASGameModeBase *GM = Cast<ASGameModeBase>(GetWorld()->GetAuthGameMode());
+		if (GM)
+			GM->OnActorKilled.Broadcast(GetOwner(), DamageCauser, InstigatedBy);
+	}
+
+
+}
+
+
+bool USHealthComponent::IsFriendly(AActor* ActorA, AActor* ActorB)
+{
+	if (ActorA == nullptr || ActorB == nullptr)
+	{
+		// Assume Friendly
+		return true;
+	}
+
+	USHealthComponent* HealthCompA = Cast<USHealthComponent>(ActorA->GetComponentByClass(USHealthComponent::StaticClass()));
+	USHealthComponent* HealthCompB = Cast<USHealthComponent>(ActorB->GetComponentByClass(USHealthComponent::StaticClass()));
+
+	if (HealthCompA == nullptr || HealthCompB == nullptr)
+	{
+		// Assume friendly
+		return true;
+	}
+
+	return HealthCompA->TeamNum == HealthCompB->TeamNum;
+}
+
+void USHealthComponent::Heal(float HealthAmount)
+{
+
+	if (HealthAmount <= 0 || Health <= 0)
+		return;
+
+	Health = FMath::Clamp(Health + HealthAmount, 0.f, DefaultHealth);
+
+	OnHealthChanged.Broadcast(this, Health, -HealthAmount, nullptr, nullptr, nullptr);
+
+	UE_LOG(LogTemp, Warning, TEXT("Health Powerup = %f"), HealthAmount);
+
+}
+
+
+
 void USHealthComponent::CreatePlayerHealthWidget(ASCharacter* OwningPlayer)
 {
 	if (HealthClass)
@@ -99,57 +184,3 @@ void USHealthComponent::DeleteHealthWidget()
 	}
 }
 
-
-void USHealthComponent::HandleTakeAnyDamage(AActor* DamagedActor, float Damage,
-	const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
-{
-
-	if (Damage <= 0.f || bIsDead)
-		return;
-
-	Health = FMath::Clamp(Health - Damage, 0.f, DefaultHealth);
-	bIsDead = Health <= 0;
-
-	UE_LOG(LogTemp, Warning, TEXT("Health Changed = %s, bIsDead = %i"), *FString::SanitizeFloat(Health), bIsDead);
-
-	OnHealthChanged.Broadcast(this, Health, Damage, DamageType, InstigatedBy, DamageCauser);
-
-	if (bIsDead && InstigatedBy != nullptr)
-	{
-		ASGameModeBase *GM = Cast<ASGameModeBase>(GetWorld()->GetAuthGameMode());
-		if (GM)
-			GM->OnActorKilled.Broadcast(GetOwner(), DamageCauser, InstigatedBy);
-	}
-
-
-}
-
-void USHealthComponent::Heal(float HealthAmount)
-{
-
-	if (HealthAmount <= 0 || Health <= 0)
-		return;
-
-	Health = FMath::Clamp(Health + HealthAmount, 0.f, DefaultHealth);
-
-	OnHealthChanged.Broadcast(this, Health, -HealthAmount, nullptr, nullptr, nullptr);
-
-	UE_LOG(LogTemp, Warning, TEXT("Health Powerup = %f"), HealthAmount);
-
-}
-
-void USHealthComponent::OnRep_Health(float oldHealth)
-{
-	UE_LOG(LogTemp, Warning, TEXT("oldHealth = %f   Health = %f"), oldHealth, Health);
-	float Damage = oldHealth - Health;
-	OnHealthChanged.Broadcast(this, Health, Damage, nullptr, nullptr, nullptr);
-}
-
-
-
-void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(USHealthComponent, Health);
-}

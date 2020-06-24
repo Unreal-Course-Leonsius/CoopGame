@@ -21,6 +21,9 @@ class COOPGAME_API ASCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ASCharacter();
+
+	UPROPERTY(BlueprintReadWrite, Category = "Jump")
+	bool bCanJump;
 	
 protected:
 
@@ -72,9 +75,6 @@ protected:
 	void BeginZoom();
 	void EndZoom();
 
-	void StartFire();
-	void StopFire();
-
 	UPROPERTY(ReplicatedUsing=OnRep_Speed, BlueprintReadWrite, Category = "Powerup")
 	float MaxSpeed;
 	UFUNCTION()
@@ -112,6 +112,15 @@ public:
 	virtual FVector GetPawnViewLocation() const override;
 
 	USHealthComponent* GetHealthComponent() { return HealthComp; }
+
+	UFUNCTION(BlueprintCallable, Category = "Fire")
+	void StartFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Fire")
+	void StopFire();
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
+	bool IsAlive();
 
 
 private:
