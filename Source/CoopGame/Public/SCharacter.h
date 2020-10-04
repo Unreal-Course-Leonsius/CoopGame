@@ -111,6 +111,7 @@ public:
 
 	virtual FVector GetPawnViewLocation() const override;
 
+
 	USHealthComponent* GetHealthComponent() { return HealthComp; }
 
 	UFUNCTION(BlueprintCallable, Category = "Fire")
@@ -121,6 +122,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
 	bool IsAlive();
+
+	UCameraComponent* GetPlayerCameraComponent() { return CameraComp; }
 
 
 private:

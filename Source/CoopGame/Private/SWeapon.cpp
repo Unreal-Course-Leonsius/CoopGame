@@ -1,7 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SWeapon.h"
+#include "SCharacter.h"
 
+#include "Camera/CameraComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
@@ -81,6 +83,8 @@ void ASWeapon::Fire()
 		ServerFire();
 
 	AActor* MyOwner = GetOwner();
+	//auto MyOwner = Cast<ASCharacter>(GetOwner());
+
 
 	if (MyOwner)
 	{
@@ -88,10 +92,13 @@ void ASWeapon::Fire()
 		FVector StartLocation;
 		FRotator StartRotation;
 		MyOwner->GetActorEyesViewPoint(OUT StartLocation, OUT StartRotation);
-		//MyOwner->
+
+				//StartLocation = MyOwner->GetPlayerCameraComponent()->GetComponentLocation();
+				//StartRotation = MyOwner->GetPlayerCameraComponent()->GetComponentRotation();
 
 		//UE_LOG(LogTemp, Warning, TEXT("CameraLocation & StartLocation = %s,  Rotation = %s"), *StartLocation.ToString(), *StartRotation.ToString());
-
+		UE_LOG(LogTemp, Error, TEXT("Update Pawns LinTrace StartLocation = %s"), *StartLocation.ToString());
+		UE_LOG(LogTemp, Error, TEXT("Update Pawns LinTrace StartRotation = %s"), *StartRotation.ToString());
 		FVector ShotDirection = StartRotation.Vector();
 
 		/// Spread Bullet
@@ -114,6 +121,8 @@ void ASWeapon::Fire()
 		QueryParams.bReturnPhysicalMaterial = true;
 
 		FVector TraceEndPoint = EndLocation;
+
+		
 
 		FHitResult Hit;
 		bool bIsDamage = GetWorld()->LineTraceSingleByChannel(

@@ -299,6 +299,7 @@ FVector ASCharacter::GetPawnViewLocation() const
 	if (CameraComp)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Update Pawns Viewpont FV = %s"), *CameraComp->GetComponentLocation().ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Update Pawns Viewpont FV Rotation = %s"), *CameraComp->GetComponentRotation().ToString());
 		return CameraComp->GetComponentLocation();
 	}
 
